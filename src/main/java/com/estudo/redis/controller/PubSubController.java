@@ -2,6 +2,7 @@ package com.estudo.redis.controller;
 
 import java.util.Map;
 
+import com.estudo.redis.dto.PixDebitEvent;
 import com.estudo.redis.dto.PublishRequest;
 import com.estudo.redis.service.PubSubService;
 import org.springframework.http.HttpStatus;
@@ -26,27 +27,22 @@ public class PubSubController {
 
     @GetMapping("/sub/{id}")
     public ResponseEntity<Map<String, Object>> subscribe(@PathVariable String id) {
-        String message = pubSubService.subscribeAndWait(id);
+        PixDebitEvent message = pubSubService.subscribeAndWait(id, 20000);
 
         return ResponseEntity.ok(Map.of(
                 "id", id,
                 "resultChannel", PubSubService.RESULT_CHANNEL,
-                "message", message
+                "message", message.toString()
         ));
     }
 
-    @PostMapping("/pub/{id}")
-    public ResponseEntity<Map<String, Object>> publish(@PathVariable String id, @RequestBody PublishRequest request) {
-        if (request == null || request.message() == null || request.message().isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "campo 'message' e obrigatorio"));
-        }
+    @PostMapping("/pub")
+    public ResponseEntity<Map<String, Object>> publish(@RequestBody String request) {
 
-        Long listeners = pubSubService.publish(id, request.message());
+        Long listeners = pubSubService.publish(request);
         return ResponseEntity.ok(Map.of(
-                "id", id,
                 "resultChannel", PubSubService.RESULT_CHANNEL,
-                "message", request.message(),
+                "message", request,
                 "receivers", listeners == null ? 0 : listeners
         ));
     }
